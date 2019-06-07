@@ -73,6 +73,22 @@ namespace PaginaRota
                 try
                 {
                     File.AppendAllText("Logs\\Log.txt", DateTime.Now.ToString() + "|Login: " + resp + Environment.NewLine);
+
+                    var instance = DBContext.GetInstance();
+                    var command = instance.CreateCommand();
+
+                    command.CommandText = "SELECT Password FROM Usuarios WHERE Username = '" + credentials[0] +"'";
+                    var reader = command.ExecuteReader();
+
+                    if (reader.HasRows)
+                    {
+                        reader.Read();
+
+                        if (reader["Password"].ToString() == credentials[1])
+                            resp += " Login OK!!!";
+                        else resp += " Login Failed :(";
+                    }
+                    else resp += " No existe el User!";
                 }
                 catch(Exception ex)
                 {
