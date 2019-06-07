@@ -70,7 +70,15 @@ namespace PaginaRota
             {
                 var credentials = HttpUtility.ParseQueryString(stream.ReadToEnd());
                 var resp = "Te loggeaste como user: " + credentials[0] + " con pass: " + credentials[1];
-                WriteLogFile.WriteLog("Log", String.Format(resp, "Login", DateTime.Now));
+                try
+                {
+                    File.AppendAllText("Logs\\Log.txt", DateTime.Now.ToString() + "|Login: " + resp + Environment.NewLine);
+                }
+                catch(Exception ex)
+                {
+                    resp = ex.Message;
+                }
+
                 var buf = Encoding.UTF8.GetBytes(resp);
 
                 SendResponse(buf, context.Response);
