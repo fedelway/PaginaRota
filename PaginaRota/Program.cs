@@ -2,6 +2,7 @@
 using System.IO;
 using System.Net;
 using System.Text;
+using System.Web;
 
 namespace PaginaRota
 {
@@ -23,10 +24,17 @@ namespace PaginaRota
 
         private static void ProcesarRequest(HttpListenerContext context)
         {
+            var req = context.Request;
             var path = context.Request.RawUrl;
             //Quito la / inicial del path
             path = path.Substring(1, path.Length - 1);
             var res = context.Response;
+
+            if (path == "login.html" && req.HttpMethod == "POST")
+            {
+                HandleLogin(context);
+                return;
+            }
 
             byte[] buffer;
             try
@@ -35,9 +43,35 @@ namespace PaginaRota
             }
             catch(Exception ex)
             {
-                buffer = System.Text.Encoding.UTF8.GetBytes(ex.Message);
+                buffer = Encoding.UTF8.GetBytes(ex.Message);
             }
 
+            res.ContentLength64 = buffer.LongLength;
+
+            using (var output = res.OutputStream)
+            {
+                output.Write(buffer, 0, buffer.Length);
+
+                Console.WriteLine("Respuesta: " + Encoding.UTF8.GetString(buffer));
+            }
+        }
+
+        static void HandleLogin(HttpListenerContext context)
+        {
+            var req = context.Request;
+            using (var stream = new StreamReader(req.InputStream) )
+            {
+                var credentials = HttpUtility.ParseQueryString(stream.ReadToEnd());
+                var resp = "Te loggeaste como user: " + credentials[0] + " con pass: " + credentials[1];
+
+                var buf = Encoding.UTF8.GetBytes(resp);
+
+                SendResponse(buf, context.Response);
+            }
+        }
+
+        static void SendResponse(byte[] buffer, HttpListenerResponse res)
+        {
             res.ContentLength64 = buffer.LongLength;
 
             using (var output = res.OutputStream)
