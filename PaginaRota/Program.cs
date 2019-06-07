@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Net;
+using System.Text;
 
 namespace PaginaRota
 {
@@ -42,6 +43,8 @@ namespace PaginaRota
             using (var output = res.OutputStream)
             {
                 output.Write(buffer, 0, buffer.Length);
+
+                Console.WriteLine("Respuesta: " + Encoding.UTF8.GetString(buffer));
             }
         }
     }
