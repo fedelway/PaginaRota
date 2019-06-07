@@ -66,11 +66,11 @@ namespace PaginaRota
         private void HandleLogin(HttpListenerContext context)
         {
             var req = context.Request;
-            using (var stream = new StreamReader(req.InputStream))
+            using (var stream = new StreamReader(req.InputStream) )
             {
                 var credentials = HttpUtility.ParseQueryString(stream.ReadToEnd());
                 var resp = "Te loggeaste como user: " + credentials[0] + " con pass: " + credentials[1];
-
+                WriteLogFile.WriteLog("Log", String.Format(resp, "Login", DateTime.Now));
                 var buf = Encoding.UTF8.GetBytes(resp);
 
                 SendResponse(buf, context.Response);
