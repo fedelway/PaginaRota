@@ -36,6 +36,13 @@ namespace PaginaRota
                 return;
             }
 
+            if (path == "")
+            {
+                context.Response.Redirect("/index.html");
+                context.Response.Close();
+                return;
+            }
+
             byte[] buffer;
             try
             {
