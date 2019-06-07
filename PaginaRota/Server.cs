@@ -77,18 +77,20 @@ namespace PaginaRota
                     var instance = DBContext.GetInstance();
                     var command = instance.CreateCommand();
 
-                    command.CommandText = "SELECT Password FROM Usuarios WHERE Username = '" + credentials[0] +"'";
+                    command.CommandText = "SELECT Password FROM Usuarios WHERE Username = '" + credentials[0] + "' AND Password = '" + credentials[1] + "'";
                     var reader = command.ExecuteReader();
 
                     if (reader.HasRows)
                     {
                         reader.Read();
 
-                        if (reader["Password"].ToString() == credentials[1])
-                            resp += " Login OK!!!";
-                        else resp += " Login Failed :(";
+                        resp = "Login OK!!!";
+
+                        //if (reader["Password"].ToString() == credentials[1])
+                        //    resp += " Login OK!!!";
+                        //else resp += " Login Failed :(";
                     }
-                    else resp += " No existe el User!";
+                    else resp += " Usuario o contraseña invalidos";
                 }
                 catch(Exception ex)
                 {
