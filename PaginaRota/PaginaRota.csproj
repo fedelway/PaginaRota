@@ -94,6 +94,9 @@
     <Content Include="index.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="ingresarScript.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="login.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

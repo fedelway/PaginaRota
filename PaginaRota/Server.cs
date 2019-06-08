@@ -49,6 +49,11 @@ namespace PaginaRota
                 HandleScriptLoco(context);
                 return;
             }
+            if( path.Contains("ingresarScript") && req.HttpMethod == "POST")
+            {
+                HandleIngresarScript(context);
+                return;
+            }
 
             if (path == "")
             {
@@ -130,7 +135,12 @@ namespace PaginaRota
                         reader.Read();
 
                         resp = "Login OK!!!";
-
+                        var cookie = new Cookie("Auth", credentials[0])
+                        {
+                            Expires = DateTime.Now.AddMinutes(30)
+                        };
+                        context.Response.SetCookie(cookie);
+                        
                         //if (reader["Password"].ToString() == credentials[1])
                         //    resp += " Login OK!!!";
                         //else resp += " Login Failed :(";
@@ -163,23 +173,30 @@ namespace PaginaRota
 
                 var reader = command.ExecuteReader();
 
-                reader.Read();
-
-                code = reader[0].ToString();
-
-                var rc = new RuntimeCompiler();
-                var results = rc.CompileSourceCodeDom(code);
-
-                if (results.Errors.HasErrors)
+                if (!reader.HasRows)
                 {
-                    response = "Errores de compilacion: ";
-                    results.Errors.Cast<CompilerError>().ToList().ForEach(e => response += e.ErrorText + Environment.NewLine);
+                    response = "No se encuentra el script";
                 }
                 else
                 {
-                    var assembly = rc.GetAssembly();
-                    rc.ExecuteFromAssembly(assembly, "DynamicClass", "DynamicMethod");
-                    response = "Metodo dinamico ejecutado correctamente";
+                    reader.Read();
+
+                    code = reader[0].ToString();
+
+                    var rc = new RuntimeCompiler(code);
+                    var results = rc.CompileSourceCodeDom();
+
+                    if (results.Errors.HasErrors)
+                    {
+                        response = "Errores de compilacion: ";
+                        results.Errors.Cast<CompilerError>().ToList().ForEach(e => response += e.ErrorText + Environment.NewLine);
+                    }
+                    else
+                    {
+                        var assembly = rc.GetAssembly();
+                        var returnValue = rc.ExecuteFromAssembly(assembly, "DynamicClass", "DynamicMethod") as string;
+                        response = "Metodo dinamico ejecutado correctamente. Resultado: " + returnValue;
+                    }
                 }
             }
             catch (Exception ex)
@@ -189,22 +206,31 @@ namespace PaginaRota
 
             var buf = Encoding.UTF8.GetBytes(response);
             SendResponse(buf, context.Response);
+        }
 
-            /*var rc = new RuntimeCompiler();
-            
-            var assembly = rc.CompileSourceCodeDom(@"using System;using System.IO;
-                    public class DynamicClass
-                    {
-                        public static void DynamicMethod()
-                        {
-                            File.WriteAllText( ""ArchivoDinamico.txt"", ""Hola como estas?"" );
-                        }
-                    }
-            
-                    ");
-            
-            rc.ExecuteFromAssembly(assembly, "DynamicClass", "DynamicMethod");
-            */
+        private void HandleIngresarScript(HttpListenerContext context)
+        {
+            string response;
+            try
+            {
+                var newScript = GetRequestBodyAsQueryString(context.Request);
+
+                var instance = DBContext.GetInstance();
+                var command = instance.CreateCommand();
+
+                command.CommandText = "Insert into Scripts(ScriptName,ScriptCode) values('" + newScript[0] + "','" + newScript[1] + "');";
+
+                command.ExecuteNonQuery();
+
+                response = "Script Agregado Satisfactoriamente.";
+            }
+            catch (Exception ex)
+            {
+                response = ex.Message;
+            }
+
+            var buf = Encoding.UTF8.GetBytes(response);
+            SendResponse(buf, context.Response);
         }
 
         private NameValueCollection GetRequestBodyAsQueryString(HttpListenerRequest req)

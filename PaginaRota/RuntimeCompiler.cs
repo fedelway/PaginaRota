@@ -12,29 +12,35 @@ namespace PaginaRota
     class RuntimeCompiler
     {
         CompilerResults results;
+        string sourceCode;
+
+        public RuntimeCompiler(string source)
+        {
+            this.sourceCode = source;
+        }
 
         public Assembly GetAssembly()
         {
             return results.CompiledAssembly;
         }
 
-        public CompilerResults CompileSourceCodeDom(string sourceCode)
+        public CompilerResults CompileSourceCodeDom()
         {
             CodeDomProvider cpd = new CSharpCodeProvider();
             var cp = new CompilerParameters();
             cp.ReferencedAssemblies.Add("System.dll");
             cp.GenerateExecutable = false;
-            CompilerResults cr = cpd.CompileAssemblyFromSource(cp, sourceCode);
+            results = cpd.CompileAssemblyFromSource(cp, this.sourceCode);
             
-            return cr;
+            return results;
         }
 
-        public void ExecuteFromAssembly(Assembly assembly, string type, string method)
+        public object ExecuteFromAssembly(Assembly assembly, string type, string method)
         {
             Type fooType = assembly.GetType(type);
             MethodInfo printMethod = fooType.GetMethod(method);
             object foo = assembly.CreateInstance(type);
-            printMethod.Invoke(foo, BindingFlags.InvokeMethod, null, null, CultureInfo.CurrentCulture);
+            return printMethod.Invoke(foo, BindingFlags.InvokeMethod, null, null, CultureInfo.CurrentCulture);
         }
 
     }
