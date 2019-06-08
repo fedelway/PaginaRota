@@ -95,9 +95,9 @@ namespace PaginaRota
                 var instance = DBContext.GetInstance();
                 var command = instance.CreateCommand();
 
-                command.CommandText = "Insert into Usuarios(Username,Password) values('"
+                command.CommandText = "Insert into Usuarios(Username,Password,isAdmin) values('"
                     + newUser[0] + "','"
-                    + newUser[1] + "'"
+                    + newUser[1] + "','N'"
                     + ")";
 
                 command.ExecuteNonQuery();
@@ -116,46 +116,45 @@ namespace PaginaRota
         private void HandleLogin(HttpListenerContext context)
         {
             var req = context.Request;
-            using (var stream = new StreamReader(req.InputStream) )
+            string resp;
+            try
             {
-                var credentials = HttpUtility.ParseQueryString(stream.ReadToEnd());
-                var resp = "Te loggeaste como user: " + credentials[0] + " con pass: " + credentials[1];
-                try
+                var credentials = GetRequestBodyAsQueryString(req);
+                resp = "Te loggeaste como user: " + credentials[0] + " con pass: " + credentials[1];
+                File.AppendAllText("Logs\\Log.txt", DateTime.Now.ToString() + "|Login: " + resp + Environment.NewLine);
+
+                var instance = DBContext.GetInstance();
+                var command = instance.CreateCommand();
+
+                command.CommandText = "SELECT Password FROM Usuarios WHERE Username = '" + credentials[0] + "' AND Password = '" + credentials[1] + "'";
+                var reader = command.ExecuteReader();
+
+                if (reader.HasRows)
                 {
-                    File.AppendAllText("Logs\\Log.txt", DateTime.Now.ToString() + "|Login: " + resp + Environment.NewLine);
+                    reader.Read();
 
-                    var instance = DBContext.GetInstance();
-                    var command = instance.CreateCommand();
-
-                    command.CommandText = "SELECT Password FROM Usuarios WHERE Username = '" + credentials[0] + "' AND Password = '" + credentials[1] + "'";
-                    var reader = command.ExecuteReader();
-
-                    if (reader.HasRows)
+                    resp = "Login OK!!!";
+                    var cookie = new Cookie("Auth", credentials[0])
                     {
-                        reader.Read();
+                        Expires = DateTime.Now.AddMinutes(30)
+                    };
+                    context.Response.SetCookie(cookie);
 
-                        resp = "Login OK!!!";
-                        var cookie = new Cookie("Auth", credentials[0])
-                        {
-                            Expires = DateTime.Now.AddMinutes(30)
-                        };
-                        context.Response.SetCookie(cookie);
-                        
-                        //if (reader["Password"].ToString() == credentials[1])
-                        //    resp += " Login OK!!!";
-                        //else resp += " Login Failed :(";
-                    }
-                    else resp += " Usuario o contraseña invalidos";
+                    //if (reader["Password"].ToString() == credentials[1])
+                    //    resp += " Login OK!!!";
+                    //else resp += " Login Failed :(";
+                    reader.Close();
                 }
-                catch(Exception ex)
-                {
-                    resp = ex.Message;
-                }
-
-                var buf = Encoding.UTF8.GetBytes(resp);
-
-                SendResponse(buf, context.Response);
+                else resp += " Usuario o contraseña invalidos";
             }
+            catch(Exception ex)
+            {
+                resp = ex.Message;
+            }
+
+            var buf = Encoding.UTF8.GetBytes(resp);
+
+            SendResponse(buf, context.Response);
         }
 
         //Aca tenemos el script compilado dinamicamente
@@ -164,6 +163,13 @@ namespace PaginaRota
             var scriptName = this.GetRequestBodyAsQueryString(context.Request);
             string response;
             string code;
+
+            if (!Security.IsUserAuthenticated(context.Request))
+            {
+                HandleNotAuthenticated(context);
+                return;
+            }
+            
             try
             {
                 var instance = DBContext.GetInstance();
@@ -182,6 +188,7 @@ namespace PaginaRota
                     reader.Read();
 
                     code = reader[0].ToString();
+                    reader.Close();
 
                     var rc = new RuntimeCompiler(code);
                     var results = rc.CompileSourceCodeDom();
@@ -203,13 +210,19 @@ namespace PaginaRota
             {
                 response = ex.Message;
             }
-
+            
             var buf = Encoding.UTF8.GetBytes(response);
             SendResponse(buf, context.Response);
         }
 
         private void HandleIngresarScript(HttpListenerContext context)
         {
+            if (!Security.IsUserAuthenticated(context.Request))
+            {
+                HandleNotAuthenticated(context);
+                return;
+            }
+
             string response;
             try
             {
@@ -230,6 +243,12 @@ namespace PaginaRota
             }
 
             var buf = Encoding.UTF8.GetBytes(response);
+            SendResponse(buf, context.Response);
+        }
+
+        private void HandleNotAuthenticated(HttpListenerContext context)
+        {
+            var buf = Encoding.UTF8.GetBytes("Ud no esta autenticado");
             SendResponse(buf, context.Response);
         }
 
@@ -254,5 +273,6 @@ namespace PaginaRota
                 Console.WriteLine("Respuesta: " + Encoding.UTF8.GetString(buffer));
             }
         }
+        
     }
 }
