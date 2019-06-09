@@ -107,7 +107,7 @@
     <Content Include="register.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="scriptLoco.html">
+    <Content Include="ejecutarScript.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="styles.css">
