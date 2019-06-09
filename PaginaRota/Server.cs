@@ -42,9 +42,9 @@ namespace PaginaRota
                 HandleRegistration(context);
                 return;
             }
-            if( path.Contains("/scriptLoco") && req.HttpMethod == "POST")
+            if( path.Contains("/ejecutarScript") && req.HttpMethod == "POST")
             {
-                HandleScriptLoco(context);
+                HandleEjecutarScript(context);
                 return;
             }
             if( path.Contains("/ingresarScript") && req.HttpMethod == "POST")
@@ -157,7 +157,7 @@ namespace PaginaRota
 
                         context.Response.SetCookie(cookie);
                         resp = "User '" + credentials[0] + "' logged in. Cookie assigned: " + cookieString;
-                        File.AppendAllText("Logs\\Log.txt", DateTime.Now.ToString() + "|Login: " + resp + Environment.NewLine);
+                        File.AppendAllText("Log.txt", DateTime.Now.ToString() + "|Login: " + resp + Environment.NewLine);
 
                         //if (reader["Password"].ToString() == credentials[1])
                         //    resp += " Login OK!!!";
@@ -180,7 +180,7 @@ namespace PaginaRota
         }
 
         //Aca tenemos el script compilado dinamicamente
-        private void HandleScriptLoco(HttpListenerContext context)
+        private void HandleEjecutarScript(HttpListenerContext context)
         {
             var scriptName = this.GetRequestBodyAsQueryString(context.Request);
             string response;
