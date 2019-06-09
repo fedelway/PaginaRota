@@ -55,7 +55,7 @@ namespace PaginaRota
 
             if (path == "/")
             {
-                context.Response.Redirect("/index.html");
+                context.Response.Redirect("/login.html");
                 context.Response.Close();
                 return;
             }
@@ -92,14 +92,14 @@ namespace PaginaRota
             try
             {
                 var newUser = this.GetRequestBodyAsQueryString(req);
-
+                string passHash = CreateMD5(newUser[1]);
                 using (var instance = DBContext.GetNormalInstance())
                 {
                     var command = instance.CreateCommand();
 
                     command.CommandText = "Insert into Usuarios(Username,Password,isAdmin) values('"
                         + newUser[0] + "','"
-                        + newUser[1] + "','N'"
+                        + passHash + "','N'"
                         + ")";
 
                     command.ExecuteNonQuery();
@@ -119,19 +119,15 @@ namespace PaginaRota
         private void HandleLogin(HttpListenerContext context)
         {
             var req = context.Request;
-            string resp;
+            string resp = "";
             try
             {
                 var credentials = GetRequestBodyAsQueryString(req);
-                resp = "Te loggeaste como user: " + credentials[0] + " con pass: " + credentials[1];
-                File.AppendAllText("Logs\\Log.txt", DateTime.Now.ToString() + "|Login: " + resp + Environment.NewLine);
-
                 using (var instance = DBContext.GetNormalInstance())
                 {
                     var command = instance.CreateCommand();
 
-                    //command.CommandText = "SELECT Password FROM Usuarios WHERE Username = '" + credentials[0] + "' AND Password = '" + credentials[1] + "'";
-                    //Now its not sql injectable
+                    string hash = CreateMD5(credentials[1]);
                     command.CommandText = "Select Password FROM Usuarios WHERE Username = @User AND Password = @Pass";
                     command.Parameters.AddWithValue("@User", credentials[0]);
                     command.Parameters.AddWithValue("@Pass", credentials[1]);
@@ -141,17 +137,21 @@ namespace PaginaRota
                     if (reader.HasRows)
                     {
                         reader.Read();
-
-                        resp = "Login OK!!!";
-                        var cookie = new Cookie("Auth", credentials[0])
+                        
+                        string cookieString = GenerateCookie();
+                        var cookie = new Cookie("Auth", cookieString)
                         {
                             Expires = DateTime.Now.AddMinutes(30)
                         };
-                        context.Response.SetCookie(cookie);
 
+                        context.Response.SetCookie(cookie);
+                        resp = "User '" + credentials[0] + "' logged in with password " + reader[0] + " - Cookie assigned: " + cookieString;
+                        File.AppendAllText("Logs\\Log.txt", DateTime.Now.ToString() + "|Login: " + resp + Environment.NewLine);
                         //if (reader["Password"].ToString() == credentials[1])
                         //    resp += " Login OK!!!";
                         //else resp += " Login Failed :(";
+
+                        resp = "Login OK! Ya estas dentro del sistema";
                         reader.Close();
                     }
                     else resp += " Usuario o contraseña invalidos";
@@ -285,6 +285,33 @@ namespace PaginaRota
                 Console.WriteLine("Respuesta: " + Encoding.UTF8.GetString(buffer));
             }
         }
-        
+
+        public static string CreateMD5(string input)
+        {
+            // Use input string to calculate MD5 hash
+            using (System.Security.Cryptography.MD5 md5 = System.Security.Cryptography.MD5.Create())
+            {
+                byte[] inputBytes = System.Text.Encoding.ASCII.GetBytes(input);
+                byte[] hashBytes = md5.ComputeHash(inputBytes);
+
+                // Convert the byte array to hexadecimal string
+                StringBuilder sb = new StringBuilder();
+                for (int i = 0; i < hashBytes.Length; i++)
+                {
+                    sb.Append(hashBytes[i].ToString("X2"));
+                }
+                return sb.ToString();
+            }
+        }
+
+        public static string GenerateCookie()
+        {
+            Guid g = Guid.NewGuid();
+            string GuidString = Convert.ToBase64String(g.ToByteArray());
+            GuidString = GuidString.Replace("=", "");
+            GuidString = GuidString.Replace("+", "");
+            return GuidString;
+        }
+
     }
 }
