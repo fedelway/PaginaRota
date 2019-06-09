@@ -20,15 +20,22 @@ namespace PaginaRota
 
                 var user = GetUserFromCookie(authCookie);
 
-                var instance = DBContext.GetNormalInstance();
-                var command = instance.CreateCommand();
-                
-                command.CommandText = "Select isAdmin from Usuarios Where Username = '" + user + "';";
+                using (var instance = DBContext.GetNormalInstance())
+                {
+                    var command = instance.CreateCommand();
 
-                var reader = command.ExecuteReader();
-                reader.Read();
+                    command.CommandText = "Select Usuarios.isAdmin from Usuarios, Cookies WHERE Usuarios.Username = Cookies.Username AND Cookies.Cookie = @cookie;";
+                    command.Parameters.AddWithValue("@cookie", user);
 
-                return (string)reader[0] == "S";
+                    //command.CommandText = "Select isAdmin from Usuarios Where Username = '" + user + "';";
+
+                    using (var reader = command.ExecuteReader())
+                    {
+                        reader.Read();
+
+                        return (string)reader[0] == "S";
+                    }
+                }
             }
             catch
             {

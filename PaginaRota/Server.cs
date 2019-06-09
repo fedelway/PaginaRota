@@ -144,9 +144,21 @@ namespace PaginaRota
                             Expires = DateTime.Now.AddMinutes(30)
                         };
 
+                        reader.Close();
+
+                        command = instance.CreateCommand();
+                        command.CommandText = "INSERT INTO Cookies(Cookie,Username,Expires) values(@cookie,@user,@expires);";
+
+                        command.Parameters.AddWithValue("@cookie", cookieString);
+                        command.Parameters.AddWithValue("@user", credentials[0]);
+                        command.Parameters.AddWithValue("@expires", DateTime.Now.AddMinutes(30).ToString());
+
+                        command.ExecuteNonQuery();
+
                         context.Response.SetCookie(cookie);
                         resp = "User '" + credentials[0] + "' logged in. Cookie assigned: " + cookieString;
                         File.AppendAllText("Logs\\Log.txt", DateTime.Now.ToString() + "|Login: " + resp + Environment.NewLine);
+
                         //if (reader["Password"].ToString() == credentials[1])
                         //    resp += " Login OK!!!";
                         //else resp += " Login Failed :(";
