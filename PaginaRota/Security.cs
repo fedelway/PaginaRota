@@ -10,7 +10,7 @@ namespace PaginaRota
     //Insecure Security Methods
     class Security
     {
-        public static bool IsUserAuthenticated(HttpListenerRequest req)
+        public static bool IsUserAdmin(HttpListenerRequest req)
         {
             try
             {
