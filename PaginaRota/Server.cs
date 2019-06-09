@@ -186,7 +186,7 @@ namespace PaginaRota
             string response;
             string code;
 
-            if (!Security.IsUserAuthenticated(context.Request))
+            if (!Security.IsUserAdmin(context.Request))
             {
                 HandleNotAuthenticated(context);
                 return;
@@ -241,7 +241,7 @@ namespace PaginaRota
 
         private void HandleIngresarScript(HttpListenerContext context)
         {
-            if (!Security.IsUserAuthenticated(context.Request))
+            if (!Security.IsUserAdmin(context.Request))
             {
                 HandleNotAuthenticated(context);
                 return;
