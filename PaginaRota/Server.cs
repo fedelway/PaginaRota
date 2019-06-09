@@ -126,8 +126,12 @@ namespace PaginaRota
                 using (var instance = DBContext.GetNormalInstance())
                 {
                     var command = instance.CreateCommand();
+
                     string hash = CreateMD5(credentials[1]);
-                    command.CommandText = "SELECT Password FROM Usuarios WHERE Username = '" + credentials[0] + "' AND Password = '" + hash + "'";
+                    command.CommandText = "Select Password FROM Usuarios WHERE Username = @User AND Password = @Pass";
+                    command.Parameters.AddWithValue("@User", credentials[0]);
+                    command.Parameters.AddWithValue("@Pass", hash);
+
                     var reader = command.ExecuteReader();
 
                     if (reader.HasRows)
