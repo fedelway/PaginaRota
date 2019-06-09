@@ -30,37 +30,38 @@ namespace PaginaRota
         {
             var req = context.Request;
             var path = context.Request.RawUrl;
-            //Quito la / inicial del path
-            path = path.Substring(1, path.Length - 1);
             var res = context.Response;
 
-            if (path == "login.html" && req.HttpMethod == "POST")
+            if (path == "/login.html" && req.HttpMethod == "POST")
             {
                 HandleLogin(context);
                 return;
             }
-            if(path == "register.html" && req.HttpMethod == "POST")
+            if(path == "/register.html" && req.HttpMethod == "POST")
             {
                 HandleRegistration(context);
                 return;
             }
-            if( path.Contains("scriptLoco") && req.HttpMethod == "POST")
+            if( path.Contains("/scriptLoco") && req.HttpMethod == "POST")
             {
                 HandleScriptLoco(context);
                 return;
             }
-            if( path.Contains("ingresarScript") && req.HttpMethod == "POST")
+            if( path.Contains("/ingresarScript") && req.HttpMethod == "POST")
             {
                 HandleIngresarScript(context);
                 return;
             }
 
-            if (path == "")
+            if (path == "/")
             {
                 context.Response.Redirect("/index.html");
                 context.Response.Close();
                 return;
             }
+
+            //Quito la / inicial del path
+            path = path.Substring(1, path.Length - 1);
 
             //Non-mapped routes just serve the file in the server directory
             byte[] buffer;
@@ -92,17 +93,19 @@ namespace PaginaRota
             {
                 var newUser = this.GetRequestBodyAsQueryString(req);
 
-                var instance = DBContext.GetInstance();
-                var command = instance.CreateCommand();
+                using (var instance = DBContext.GetNormalInstance())
+                {
+                    var command = instance.CreateCommand();
 
-                command.CommandText = "Insert into Usuarios(Username,Password,isAdmin) values('"
-                    + newUser[0] + "','"
-                    + newUser[1] + "','N'"
-                    + ")";
+                    command.CommandText = "Insert into Usuarios(Username,Password,isAdmin) values('"
+                        + newUser[0] + "','"
+                        + newUser[1] + "','N'"
+                        + ")";
 
-                command.ExecuteNonQuery();
+                    command.ExecuteNonQuery();
 
-                resp = "Usuario creado satisfactoriamente!";
+                    resp = "Usuario creado satisfactoriamente!";
+                }
             }
             catch( Exception ex)
             {
@@ -123,29 +126,31 @@ namespace PaginaRota
                 resp = "Te loggeaste como user: " + credentials[0] + " con pass: " + credentials[1];
                 File.AppendAllText("Logs\\Log.txt", DateTime.Now.ToString() + "|Login: " + resp + Environment.NewLine);
 
-                var instance = DBContext.GetInstance();
-                var command = instance.CreateCommand();
-
-                command.CommandText = "SELECT Password FROM Usuarios WHERE Username = '" + credentials[0] + "' AND Password = '" + credentials[1] + "'";
-                var reader = command.ExecuteReader();
-
-                if (reader.HasRows)
+                using (var instance = DBContext.GetNormalInstance())
                 {
-                    reader.Read();
+                    var command = instance.CreateCommand();
 
-                    resp = "Login OK!!!";
-                    var cookie = new Cookie("Auth", credentials[0])
+                    command.CommandText = "SELECT Password FROM Usuarios WHERE Username = '" + credentials[0] + "' AND Password = '" + credentials[1] + "'";
+                    var reader = command.ExecuteReader();
+
+                    if (reader.HasRows)
                     {
-                        Expires = DateTime.Now.AddMinutes(30)
-                    };
-                    context.Response.SetCookie(cookie);
+                        reader.Read();
 
-                    //if (reader["Password"].ToString() == credentials[1])
-                    //    resp += " Login OK!!!";
-                    //else resp += " Login Failed :(";
-                    reader.Close();
+                        resp = "Login OK!!!";
+                        var cookie = new Cookie("Auth", credentials[0])
+                        {
+                            Expires = DateTime.Now.AddMinutes(30)
+                        };
+                        context.Response.SetCookie(cookie);
+
+                        //if (reader["Password"].ToString() == credentials[1])
+                        //    resp += " Login OK!!!";
+                        //else resp += " Login Failed :(";
+                        reader.Close();
+                    }
+                    else resp += " Usuario o contraseña invalidos";
                 }
-                else resp += " Usuario o contraseña invalidos";
             }
             catch(Exception ex)
             {
@@ -172,37 +177,39 @@ namespace PaginaRota
             
             try
             {
-                var instance = DBContext.GetInstance();
-                var command = instance.CreateCommand();
-
-                command.CommandText = "Select ScriptCode from Scripts where ScriptName = '" + scriptName[0] + "'";
-
-                var reader = command.ExecuteReader();
-
-                if (!reader.HasRows)
+                using (var instance = DBContext.GetAdminInstance())
                 {
-                    response = "No se encuentra el script";
-                }
-                else
-                {
-                    reader.Read();
+                    var command = instance.CreateCommand();
 
-                    code = reader[0].ToString();
-                    reader.Close();
+                    command.CommandText = "Select ScriptCode from Scripts where ScriptName = '" + scriptName[0] + "'";
 
-                    var rc = new RuntimeCompiler(code);
-                    var results = rc.CompileSourceCodeDom();
+                    var reader = command.ExecuteReader();
 
-                    if (results.Errors.HasErrors)
+                    if (!reader.HasRows)
                     {
-                        response = "Errores de compilacion: ";
-                        results.Errors.Cast<CompilerError>().ToList().ForEach(e => response += e.ErrorText + Environment.NewLine);
+                        response = "No se encuentra el script";
                     }
                     else
                     {
-                        var assembly = rc.GetAssembly();
-                        var returnValue = rc.ExecuteFromAssembly(assembly, "DynamicClass", "DynamicMethod") as string;
-                        response = "Metodo dinamico ejecutado correctamente. Resultado: " + returnValue;
+                        reader.Read();
+
+                        code = reader[0].ToString();
+                        reader.Close();
+
+                        var rc = new RuntimeCompiler(code);
+                        var results = rc.CompileSourceCodeDom();
+
+                        if (results.Errors.HasErrors)
+                        {
+                            response = "Errores de compilacion: ";
+                            results.Errors.Cast<CompilerError>().ToList().ForEach(e => response += e.ErrorText + Environment.NewLine);
+                        }
+                        else
+                        {
+                            var assembly = rc.GetAssembly();
+                            var returnValue = rc.ExecuteFromAssembly(assembly, "DynamicClass", "DynamicMethod") as string;
+                            response = "Metodo dinamico ejecutado correctamente. Resultado: " + returnValue;
+                        }
                     }
                 }
             }
@@ -228,7 +235,7 @@ namespace PaginaRota
             {
                 var newScript = GetRequestBodyAsQueryString(context.Request);
 
-                var instance = DBContext.GetInstance();
+                var instance = DBContext.GetAdminInstance();
                 var command = instance.CreateCommand();
 
                 command.CommandText = "Insert into Scripts(ScriptName,ScriptCode) values('" + newScript[0] + "','" + newScript[1] + "');";

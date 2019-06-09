@@ -20,7 +20,7 @@ namespace PaginaRota
 
                 var user = GetUserFromCookie(authCookie);
 
-                var instance = DBContext.GetInstance();
+                var instance = DBContext.GetNormalInstance();
                 var command = instance.CreateCommand();
                 
                 command.CommandText = "Select isAdmin from Usuarios Where Username = '" + user + "';";
