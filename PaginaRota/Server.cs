@@ -130,7 +130,7 @@ namespace PaginaRota
                     string hash = CreateMD5(credentials[1]);
                     command.CommandText = "Select Password FROM Usuarios WHERE Username = @User AND Password = @Pass";
                     command.Parameters.AddWithValue("@User", credentials[0]);
-                    command.Parameters.AddWithValue("@Pass", credentials[1]);
+                    command.Parameters.AddWithValue("@Pass", hash);
 
                     var reader = command.ExecuteReader();
 
