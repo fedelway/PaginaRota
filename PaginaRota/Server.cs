@@ -130,7 +130,12 @@ namespace PaginaRota
                 {
                     var command = instance.CreateCommand();
 
-                    command.CommandText = "SELECT Password FROM Usuarios WHERE Username = '" + credentials[0] + "' AND Password = '" + credentials[1] + "'";
+                    //command.CommandText = "SELECT Password FROM Usuarios WHERE Username = '" + credentials[0] + "' AND Password = '" + credentials[1] + "'";
+                    //Now its not sql injectable
+                    command.CommandText = "Select Password FROM Usuarios WHERE Username = @User AND Password = @Pass";
+                    command.Parameters.AddWithValue("@User", credentials[0]);
+                    command.Parameters.AddWithValue("@Pass", credentials[1]);
+
                     var reader = command.ExecuteReader();
 
                     if (reader.HasRows)
