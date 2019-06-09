@@ -141,7 +141,7 @@ namespace PaginaRota
                         };
 
                         context.Response.SetCookie(cookie);
-                        resp = "User '" + credentials[0] + "' logged in with password " + reader[0] + " - Cookie assigned: " + cookieString;
+                        resp = "User '" + credentials[0] + "' logged in. Cookie assigned: " + cookieString;
                         File.AppendAllText("Logs\\Log.txt", DateTime.Now.ToString() + "|Login: " + resp + Environment.NewLine);
                         //if (reader["Password"].ToString() == credentials[1])
                         //    resp += " Login OK!!!";
