@@ -47,5 +47,19 @@ namespace PaginaRota
         {
             return cookie.Value;
         }
+
+        public static bool isUserLoguedIn(HttpListenerRequest req)
+        {
+            try
+            {
+                var authCookie = req.Cookies["Auth"];
+                return authCookie != null && !authCookie.Expired;
+            }
+            catch
+            {
+                return false;
+            }
+        }
     }
+
 }

@@ -42,7 +42,16 @@ namespace PaginaRota
                 HandleRegistration(context);
                 return;
             }
-            if( path.Contains("/ejecutarScript") && req.HttpMethod == "POST")
+            if (path == "/index.html")
+            {
+                if (!Security.isUserLoguedIn(context.Request)) 
+                {
+                    context.Response.Redirect("/login.html");
+                    context.Response.Close();
+                    return;
+                }
+            }
+            if ( path.Contains("/ejecutarScript") && req.HttpMethod == "POST")
             {
                 HandleEjecutarScript(context);
                 return;
@@ -103,8 +112,11 @@ namespace PaginaRota
                         + ")";
 
                     command.ExecuteNonQuery();
-
+                    CreateSession(context);
                     resp = "Usuario creado satisfactoriamente!";
+                    context.Response.Redirect("/index.html");
+                    context.Response.Close();
+                    return;
                 }
             }
             catch( Exception ex)
@@ -165,6 +177,9 @@ namespace PaginaRota
 
                         resp = "Login OK! Ya estas dentro del sistema";
                         reader.Close();
+                        context.Response.Redirect("/index.html");
+                        context.Response.Close();
+                        return;
                     }
                     else resp += " Usuario o contraseña invalidos";
                 }
@@ -177,6 +192,36 @@ namespace PaginaRota
             var buf = Encoding.UTF8.GetBytes(resp);
 
             SendResponse(buf, context.Response);
+        }
+
+        private void CreateSession(HttpListenerContext context)
+        {
+            var req = context.Request;
+
+            var credentials = GetRequestBodyAsQueryString(req);
+
+            using (var instance = DBContext.GetNormalInstance())
+            {
+                var command = instance.CreateCommand();
+                string cookieString = GenerateCookie();
+                var cookie = new Cookie("Auth", cookieString)
+                {
+                    Expires = DateTime.Now.AddMinutes(30)
+                };
+
+                command = instance.CreateCommand();
+                command.CommandText = "INSERT INTO Cookies(Cookie,Username,Expires) values(@cookie,@user,@expires);";
+
+                command.Parameters.AddWithValue("@cookie", cookieString);
+                command.Parameters.AddWithValue("@user", credentials[0]);
+                command.Parameters.AddWithValue("@expires", DateTime.Now.AddMinutes(30).ToString());
+
+                command.ExecuteNonQuery();
+
+                context.Response.SetCookie(cookie);
+                var resp = "User '" + credentials[0] + "' logged in. Cookie assigned: " + cookieString;
+                File.AppendAllText("Log.txt", DateTime.Now.ToString() + "|Login: " + resp + Environment.NewLine);
+            }
         }
 
         //Aca tenemos el script compilado dinamicamente
