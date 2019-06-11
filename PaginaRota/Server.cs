@@ -234,18 +234,18 @@ namespace PaginaRota
             var files = Directory.EnumerateFiles(path);
 
             var endpoint = "http://localhost:8080/";
-            var href = "<a href=\"" + endpoint + "&path;\">&path;</a>";
+            var href = "<a href=\"" + endpoint + "&path;\">&nombre;</a>";
 
             string dirHref;
             string filesHref;
             try
             {
-                dirHref = dirs.Select(s => s = href.Replace("&path;", s + "?url="+HttpUtility.UrlEncode(s) )).Aggregate((x, y) => x + "<br>" + y);
+                dirHref = dirs.Select(s => s = href.Replace("&path;", s + "?url="+HttpUtility.UrlEncode(s) ).Replace("&nombre;",s) ).Aggregate((x, y) => x + "<br>" + y);
             }
             catch { dirHref = ""; }
             try
             {
-                filesHref = files.Select(s => s = href.Replace("&path;", s)).Aggregate((x, y) => x + "<br>" + y);
+                filesHref = files.Select(s => s = href.Replace("&path;", s).Replace("&nombre;",s) ).Aggregate((x, y) => x + "<br>" + y);
             }
             catch { filesHref = ""; }
 
