@@ -101,9 +101,6 @@
     <Content Include="index.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="ingresarScript.html">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
     <Content Include="Libros\libros.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

@@ -63,7 +63,7 @@ namespace PaginaRota
                 return;
             }*/
 
-            if( path.Contains("libros.html") )
+            if( path.Contains("/libros") )
             {
                 HandleLibros(context);
                 return;
@@ -206,19 +206,44 @@ namespace PaginaRota
         {
             var path = context.Request.RawUrl;
             path = path.Substring(1, path.Length - 1);
-            path = HttpUtility.HtmlDecode(path);
+            path = HttpUtility.UrlDecode(path);
 
-            var html = File.ReadAllText(path);
+            //Just serve it
+            if( File.Exists(path) && !path.Contains("libros.html") )
+            {
+                var bytes = File.ReadAllBytes(path);
+                SendResponse(bytes, context.Response);
+                return;
+            }
 
-            path = path.Substring(0, path.IndexOf('/'));
-            var list = Directory.EnumerateFileSystemEntries(path);
+            if( path == "libros/libros.html" )
+            {
+                path = path.Substring(0, path.IndexOf('/'));
+            }
+
+            var html = File.ReadAllText("libros/libros.html");
+
+            
+            var dirs = Directory.EnumerateDirectories(path);
+            var files = Directory.EnumerateFiles(path);
 
             var endpoint = "http://localhost:8080/";
             var href = "<a href=\"" + endpoint + "&path;\">&path;</a>";
 
-            var links = list.Select(s => s = href.Replace("&path;", s) ).Aggregate( (x,y) => x + "<br>" + y );
+            string dirHref;
+            string filesHref;
+            try
+            {
+                dirHref = dirs.Select(s => s = href.Replace("&path;", s)).Aggregate((x, y) => x + "<br>" + y);
+            }
+            catch { dirHref = ""; }
+            try
+            {
+                filesHref = files.Select(s => s = href.Replace("&path;", s)).Aggregate((x, y) => x + "<br>" + y);
+            }
+            catch { filesHref = ""; }
 
-            html = html.Replace("&replace;", links);
+            html = html.Replace("&replace;", dirHref + "<br>" + filesHref);
 
             var resp = Encoding.UTF8.GetBytes(html);
             SendResponse(resp, context.Response);
@@ -232,8 +257,7 @@ namespace PaginaRota
                 context.Response.Redirect("/login.html");
                 context.Response.Close();
                 return;
-            }
-            var scriptName = this.GetRequestBodyAsQueryString(context.Request);
+            }            var scriptName = this.GetRequestBodyAsQueryString(context.Request);
             string response;
             string code;
 
