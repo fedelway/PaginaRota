@@ -112,7 +112,7 @@ namespace PaginaRota
                         + ")";
 
                     command.ExecuteNonQuery();
-                    CreateSession(context);
+                    CreateSession(context, newUser);
                     resp = "Usuario creado satisfactoriamente!";
                     context.Response.Redirect("/index.html");
                     context.Response.Close();
@@ -194,11 +194,9 @@ namespace PaginaRota
             SendResponse(buf, context.Response);
         }
 
-        private void CreateSession(HttpListenerContext context)
+        private void CreateSession(HttpListenerContext context, NameValueCollection credentials)
         {
             var req = context.Request;
-
-            var credentials = GetRequestBodyAsQueryString(req);
 
             using (var instance = DBContext.GetNormalInstance())
             {

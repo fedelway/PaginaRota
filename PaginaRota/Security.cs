@@ -24,7 +24,7 @@ namespace PaginaRota
                 {
                     var command = instance.CreateCommand();
 
-                    command.CommandText = "Select Usuarios.isAdmin from Usuarios, Cookies WHERE Usuarios.Username = Cookies.Username AND Cookies.Cookie = @cookie;";
+                    command.CommandText = "Select Usuarios.isAdmin Cookies.Expires from Usuarios, Cookies WHERE Usuarios.Username = Cookies.Username AND Cookies.Cookie = @cookie;";
                     command.Parameters.AddWithValue("@cookie", user);
 
                     //command.CommandText = "Select isAdmin from Usuarios Where Username = '" + user + "';";
@@ -33,7 +33,10 @@ namespace PaginaRota
                     {
                         reader.Read();
 
-                        return (string)reader[0] == "S";
+                        var isAdmin = (string)reader[0] == "S";
+                        var expirationDate = DateTime.Parse((string)reader[1]);
+
+                        return isAdmin && DateTime.Now < expirationDate;
                     }
                 }
             }
