@@ -317,7 +317,7 @@ namespace PaginaRota
 
         private void HandleNotAuthenticated(HttpListenerContext context)
         {
-            var buf = Encoding.UTF8.GetBytes("Ud no esta autenticado");
+            var buf = Encoding.UTF8.GetBytes("Necesita permisos de administrador para acceder");
             SendResponse(buf, context.Response);
         }
 
