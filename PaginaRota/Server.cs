@@ -61,6 +61,11 @@ namespace PaginaRota
                 HandleIngresarScript(context);
                 return;
             }
+            if( path.Contains("libros.html") )
+            {
+                HandleLibros(context);
+                return;
+            }
 
             if (path == "/")
             {
@@ -69,8 +74,9 @@ namespace PaginaRota
                 return;
             }
 
-            //Quito la / inicial del path
+            //Quito la / inicial del path y desencodeo
             path = path.Substring(1, path.Length - 1);
+            path = HttpUtility.UrlDecode(path);
 
             //Non-mapped routes just serve the file in the server directory
             byte[] buffer;
@@ -194,32 +200,26 @@ namespace PaginaRota
             SendResponse(buf, context.Response);
         }
 
-        private void CreateSession(HttpListenerContext context, NameValueCollection credentials)
+        private void HandleLibros(HttpListenerContext context)
         {
-            var req = context.Request;
+            var path = context.Request.RawUrl;
+            path = path.Substring(1, path.Length - 1);
+            path = HttpUtility.HtmlDecode(path);
 
-            using (var instance = DBContext.GetNormalInstance())
-            {
-                var command = instance.CreateCommand();
-                string cookieString = GenerateCookie();
-                var cookie = new Cookie("Auth", cookieString)
-                {
-                    Expires = DateTime.Now.AddMinutes(30)
-                };
+            var html = File.ReadAllText(path);
 
-                command = instance.CreateCommand();
-                command.CommandText = "INSERT INTO Cookies(Cookie,Username,Expires) values(@cookie,@user,@expires);";
+            path = path.Substring(0, path.IndexOf('/'));
+            var list = Directory.EnumerateFileSystemEntries(path);
 
-                command.Parameters.AddWithValue("@cookie", cookieString);
-                command.Parameters.AddWithValue("@user", credentials[0]);
-                command.Parameters.AddWithValue("@expires", DateTime.Now.AddMinutes(30).ToString());
+            var endpoint = "http://localhost:8080/";
+            var href = "<a href=\"" + endpoint + "&path;\">&path;</a>";
 
-                command.ExecuteNonQuery();
+            var links = list.Select(s => s = href.Replace("&path;", s) ).Aggregate( (x,y) => x + "<br>" + y );
 
-                context.Response.SetCookie(cookie);
-                var resp = "User '" + credentials[0] + "' logged in. Cookie assigned: " + cookieString;
-                File.AppendAllText("Log.txt", DateTime.Now.ToString() + "|Login: " + resp + Environment.NewLine);
-            }
+            html = html.Replace("&replace;", links);
+
+            var resp = Encoding.UTF8.GetBytes(html);
+            SendResponse(resp, context.Response);
         }
 
         //Aca tenemos el script compilado dinamicamente
@@ -317,6 +317,34 @@ namespace PaginaRota
         {
             var buf = Encoding.UTF8.GetBytes("Necesita permisos de administrador para acceder");
             SendResponse(buf, context.Response);
+        }
+
+        private void CreateSession(HttpListenerContext context, NameValueCollection credentials)
+        {
+            var req = context.Request;
+
+            using (var instance = DBContext.GetNormalInstance())
+            {
+                var command = instance.CreateCommand();
+                string cookieString = GenerateCookie();
+                var cookie = new Cookie("Auth", cookieString)
+                {
+                    Expires = DateTime.Now.AddMinutes(30)
+                };
+
+                command = instance.CreateCommand();
+                command.CommandText = "INSERT INTO Cookies(Cookie,Username,Expires) values(@cookie,@user,@expires);";
+
+                command.Parameters.AddWithValue("@cookie", cookieString);
+                command.Parameters.AddWithValue("@user", credentials[0]);
+                command.Parameters.AddWithValue("@expires", DateTime.Now.AddMinutes(30).ToString());
+
+                command.ExecuteNonQuery();
+
+                context.Response.SetCookie(cookie);
+                var resp = "User '" + credentials[0] + "' logged in. Cookie assigned: " + cookieString;
+                File.AppendAllText("Log.txt", DateTime.Now.ToString() + "|Login: " + resp + Environment.NewLine);
+            }
         }
 
         private NameValueCollection GetRequestBodyAsQueryString(HttpListenerRequest req)
