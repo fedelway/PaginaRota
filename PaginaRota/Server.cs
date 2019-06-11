@@ -56,11 +56,13 @@ namespace PaginaRota
                 HandleEjecutarScript(context);
                 return;
             }
-            if( path.Contains("/ingresarScript") && req.HttpMethod == "POST")
+
+            /*if( path.Contains("/ingresarScript") && req.HttpMethod == "POST")
             {
                 HandleIngresarScript(context);
                 return;
-            }
+            }*/
+
             if( path.Contains("libros.html") )
             {
                 HandleLibros(context);
@@ -225,6 +227,12 @@ namespace PaginaRota
         //Aca tenemos el script compilado dinamicamente
         private void HandleEjecutarScript(HttpListenerContext context)
         {
+            if (!Security.isUserLoguedIn(context.Request))
+            {
+                context.Response.Redirect("/login.html");
+                context.Response.Close();
+                return;
+            }
             var scriptName = this.GetRequestBodyAsQueryString(context.Request);
             string response;
             string code;
@@ -282,40 +290,10 @@ namespace PaginaRota
             SendResponse(buf, context.Response);
         }
 
-        private void HandleIngresarScript(HttpListenerContext context)
-        {
-            if (!Security.IsUserAdmin(context.Request))
-            {
-                HandleNotAuthenticated(context);
-                return;
-            }
-
-            string response;
-            try
-            {
-                var newScript = GetRequestBodyAsQueryString(context.Request);
-
-                var instance = DBContext.GetAdminInstance();
-                var command = instance.CreateCommand();
-
-                command.CommandText = "Insert into Scripts(ScriptName,ScriptCode) values('" + newScript[0] + "','" + newScript[1] + "');";
-
-                command.ExecuteNonQuery();
-
-                response = "Script Agregado Satisfactoriamente.";
-            }
-            catch (Exception ex)
-            {
-                response = ex.Message;
-            }
-
-            var buf = Encoding.UTF8.GetBytes(response);
-            SendResponse(buf, context.Response);
-        }
-
+       
         private void HandleNotAuthenticated(HttpListenerContext context)
         {
-            var buf = Encoding.UTF8.GetBytes("Necesita permisos de administrador para acceder");
+            var buf = Encoding.UTF8.GetBytes("Necesita permisos de administrador para ejecutar scripts");
             SendResponse(buf, context.Response);
         }
 
