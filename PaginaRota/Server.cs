@@ -32,6 +32,7 @@ namespace PaginaRota
             var path = context.Request.RawUrl;
             var res = context.Response;
 
+
             if (path == "/login.html" && req.HttpMethod == "POST")
             {
                 HandleLogin(context);
@@ -204,9 +205,15 @@ namespace PaginaRota
 
         private void HandleLibros(HttpListenerContext context)
         {
+            var req = context.Request;
             var path = context.Request.RawUrl;
             path = path.Substring(1, path.Length - 1);
             path = HttpUtility.UrlDecode(path);
+
+            if( req.QueryString.Count > 0)
+            {
+                path = req.QueryString[0];
+            }
 
             //Just serve it
             if( File.Exists(path) && !path.Contains("libros.html") )
@@ -223,7 +230,6 @@ namespace PaginaRota
 
             var html = File.ReadAllText("libros/libros.html");
 
-            
             var dirs = Directory.EnumerateDirectories(path);
             var files = Directory.EnumerateFiles(path);
 
@@ -234,7 +240,7 @@ namespace PaginaRota
             string filesHref;
             try
             {
-                dirHref = dirs.Select(s => s = href.Replace("&path;", s)).Aggregate((x, y) => x + "<br>" + y);
+                dirHref = dirs.Select(s => s = href.Replace("&path;", s + "?url="+HttpUtility.UrlEncode(s) )).Aggregate((x, y) => x + "<br>" + y);
             }
             catch { dirHref = ""; }
             try
