@@ -205,54 +205,62 @@ namespace PaginaRota
 
         private void HandleLibros(HttpListenerContext context)
         {
-            var req = context.Request;
-            var path = context.Request.RawUrl;
-            path = path.Substring(1, path.Length - 1);
-            path = HttpUtility.UrlDecode(path);
-
-            if( req.QueryString.Count > 0)
-            {
-                path = req.QueryString[0];
-            }
-
-            //Just serve it
-            if( File.Exists(path) && !path.Contains("libros.html") )
-            {
-                var bytes = File.ReadAllBytes(path);
-                SendResponse(bytes, context.Response);
-                return;
-            }
-
-            if( path == "libros/libros.html" )
-            {
-                path = path.Substring(0, path.IndexOf('/'));
-            }
-
-            var html = File.ReadAllText("libros/libros.html");
-
-            var dirs = Directory.EnumerateDirectories(path);
-            var files = Directory.EnumerateFiles(path);
-
-            var endpoint = "http://localhost:8080/";
-            var href = "<a href=\"" + endpoint + "&path;\">&nombre;</a>";
-
-            string dirHref;
-            string filesHref;
+            string resp;
             try
             {
-                dirHref = dirs.Select(s => s = href.Replace("&path;", s + "?url="+HttpUtility.UrlEncode(s) ).Replace("&nombre;",s) ).Aggregate((x, y) => x + "<br>" + y);
+                var req = context.Request;
+                var path = context.Request.RawUrl;
+                path = path.Substring(1, path.Length - 1);
+                path = HttpUtility.UrlDecode(path);
+
+                if (req.QueryString.Count > 0)
+                {
+                    path = req.QueryString[0];
+                }
+
+                //Just serve it
+                if (File.Exists(path) && !path.Contains("libros.html"))
+                {
+                    var bytes = File.ReadAllBytes(path);
+                    SendResponse(bytes, context.Response);
+                    return;
+                }
+
+                if (path == "libros/libros.html")
+                {
+                    path = path.Substring(0, path.IndexOf('/'));
+                }
+
+                var html = File.ReadAllText("libros/libros.html");
+
+                var dirs = Directory.EnumerateDirectories(path);
+                var files = Directory.EnumerateFiles(path);
+
+                var endpoint = "http://localhost:8080/";
+                var href = "<a href=\"" + endpoint + "&path;\">&nombre;</a>";
+
+                string dirHref;
+                string filesHref;
+                try
+                {
+                    dirHref = dirs.Select(s => s = href.Replace("&path;", s + "?url=" + HttpUtility.UrlEncode(s)).Replace("&nombre;", s)).Aggregate((x, y) => x + "<br>" + y);
+                }
+                catch { dirHref = ""; }
+                try
+                {
+                    filesHref = files.Select(s => s = href.Replace("&path;", s).Replace("&nombre;", s)).Aggregate((x, y) => x + "<br>" + y);
+                }
+                catch { filesHref = ""; }
+
+                html = html.Replace("&replace;", dirHref + "<br>" + filesHref);
+                resp = html;
             }
-            catch { dirHref = ""; }
-            try
+            catch (Exception ex)
             {
-                filesHref = files.Select(s => s = href.Replace("&path;", s).Replace("&nombre;",s) ).Aggregate((x, y) => x + "<br>" + y);
+                resp = ex.Message;
             }
-            catch { filesHref = ""; }
-
-            html = html.Replace("&replace;", dirHref + "<br>" + filesHref);
-
-            var resp = Encoding.UTF8.GetBytes(html);
-            SendResponse(resp, context.Response);
+            var buf = Encoding.UTF8.GetBytes(resp);
+            SendResponse(buf, context.Response);
         }
 
         //Aca tenemos el script compilado dinamicamente
