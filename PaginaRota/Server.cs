@@ -115,10 +115,17 @@ namespace PaginaRota
                 {
                     var command = instance.CreateCommand();
 
-                    command.CommandText = "Insert into Usuarios(Username,Password,isAdmin) values('"
+                    /*command.CommandText = "Insert into Usuarios(Username,Password,isAdmin) values('"
                         + newUser[0] + "','"
                         + passHash + "','N'"
-                        + ")";
+                        + ")";*/
+
+                    command.CommandText = @"Insert into Usuarios(Username,Password,isAdmin)
+                                            values(@user,@pass,@admin);";
+
+                    command.Parameters.AddWithValue("@user", newUser[0]);
+                    command.Parameters.AddWithValue("@pass", passHash);
+                    command.Parameters.AddWithValue("@admin", "N");
 
                     command.ExecuteNonQuery();
                     CreateSession(context, newUser);
