@@ -315,7 +315,7 @@ namespace PaginaRota
 
         private void HandleNotAuthenticated(HttpListenerContext context)
         {
-            var buf = Encoding.UTF8.GetBytes("Necesita permisos de administrador para acceder");
+            var buf = Encoding.UTF8.GetBytes("Necesita permisos de administrador para ejecutar scripts");
             SendResponse(buf, context.Response);
         }
 
