@@ -215,6 +215,12 @@ namespace PaginaRota
             string resp;
             try
             {
+                if (!Security.isUserLoguedIn(context.Request))
+                {
+                    SendResponse(Encoding.UTF8.GetBytes("Ud no esta loggeado."), context.Response);
+                    return;
+                }
+
                 var req = context.Request;
                 var path = context.Request.RawUrl;
                 path = path.Substring(1, path.Length - 1);
